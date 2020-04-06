@@ -1,0 +1,52 @@
+# classes id
+
+# adidas - id 1
+# gazprom - id 2
+# heineken - id 3
+# mastercard - id 4
+# nissan - id 5
+# pepsi - id 6
+# playstation - id 7
+# unicredit - id 8
+
+replace: # specifying banner to replace by id of original banner
+   1: 1xbet.png # to replace adidas for 1xbet
+   2: 1xbet.png # to replace gazprom for pornhub
+   3: 1xbet.png # to replace heineken for mcdonalds
+   6: 1xbet.png # to replace pepsi for suzuki
+   7: 1xbet.png # to replace playstation for parimatch
+
+# timepoints
+periods: # if the banner should be replaced throughout the video, periods should not be specified
+   period_1: {start: 1126, finish: 1136} # periods must be specified in seconds
+#   period_2: {start: 7, finish: 8}
+
+model_weight_path: 'weights/mask_rcnn_checkpoint.h5'
+
+# video/image source link
+#source_link: 'football_min.mp4'  # type file path to source file
+source_link: 'new_video.mp4'      # type file path to source file
+source_type: 0                   # select 0 for video, 1 for image
+
+# saving result
+save_result: True                # select False if you don't want to save result
+saving_link: 'result.avi'   # type file path and name to save result
+
+# logo link
+logo_link: '1xbet.png'           # type file path to the logo file
+
+# model image dimension
+img_height: 720                  # image height for training and prediction
+img_width: 1280                  # image width for training and prediction
+img_channels: 3                  # image color (BGR)
+
+
+# banner detection parameters
+filter_area_size: 30             # filters small contours
+full_size_step: 50               # walking step for predicting full size frame
+
+# smoothing coordinates parameters
+min_window: 4                    # minimun window size
+max_window: 33                   # maximum window size
+poly_degree: 3                   # polynome degree value
+smooth_threshold: 10             # maximum difference between points
