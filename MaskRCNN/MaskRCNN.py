@@ -11,6 +11,9 @@ from mrcnn.config import Config
 from mrcnn import model as modellib
 from collections import defaultdict
 
+from smooth import smooth_points
+
+
 class myMaskRCNNConfig(Config):
     # give the configuration a recognizable name
     NAME = "MaskRCNN_config"
@@ -18,7 +21,7 @@ class myMaskRCNNConfig(Config):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     # number of classes (we would normally add +1 for the background)
-    NUM_CLASSES = 1+8
+    NUM_CLASSES = 1 + 8
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 1000
     VALIDATION_STEPS = 200
@@ -56,10 +59,9 @@ class MRCNNLogoInsertion():
         self.class_match = defaultdict(list)
         self.before_smoothing = True
         self.mask_id = None
-        self.class_ids = None
-        self.masks = None
+        self.class_ids = list()
+        self.masks = list()
         self.banner_id = None
-        # self.mask = None
         self.saved_points = pd.DataFrame(columns=['top_left_x', 'top_left_y', 'top_right_x', 'top_right_y',
                                                   'bot_left_x', 'bot_left_y', 'bot_right_x', 'bot_right_y'])
 
@@ -81,13 +83,13 @@ class MRCNNLogoInsertion():
         """
         checks time intervals
         """
-        time = self.frame_num / self.fps
-        if self.start <= time and time <= self.finish:
+        times = self.frame_num / self.fps
+        if (self.start < times) and (times < self.finish):
             self.process = True
         else:
             self.process = False
 
-        if time == self.finish:
+        if times == self.finish:
             del self.config['periods'][self.key]
             if len(self.config['periods'].keys()):
                 self.key = list(self.config['periods'].keys())[0]
@@ -105,10 +107,11 @@ class MRCNNLogoInsertion():
             if self.before_smoothing:
                 self.__detect_mask()
                 for mask_id, class_id in enumerate(self.class_ids):
-                    mask = self.masks[:, :, mask_id]
+                    mask = self.masks[mask_id]
+                    # mask = self.masks[:, :, mask_id]
                     self.__check_contours(mask, class_id, mask_id)
             else:
-                if self.frame_num in self.class_match.keys():
+                if self.frame_num in self.class_match:
                     self.detection_successful = True
                 else:
                     self.detection_successful = False
@@ -119,10 +122,13 @@ class MRCNNLogoInsertion():
         result = self.model.detect([rgb_frame])[0]
         class_ids = result['class_ids']
         masks = result['masks']
-        to_delete = [i for i, class_id in enumerate(class_ids) if class_id not in self.to_replace]
-        self.masks = np.delete(masks, np.s_[to_delete], 2).astype(np.float32)
-        self.class_ids = np.delete(class_ids, to_delete)
-
+        self.masks.clear()
+        self.class_ids.clear()
+        for i, class_id in enumerate(class_ids):
+            if class_id in self.to_replace:
+                mask = masks[:, :, i].astype(np.float32)
+                self.masks.append(mask)
+                self.class_ids.append(class_id)
 
     def __check_contours(self, fsz_mask, class_id, mask_id):
         '''
@@ -136,46 +142,38 @@ class MRCNNLogoInsertion():
         first_cnt = True
         _, thresh = cv2.threshold(fsz_mask, 0.5, 255, 0)
         thresh = thresh.astype(np.uint8)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if len(contours) < 1:
-            print("Empty Frame")
-            return
-        else:
-            for cnt in contours:
-                if cv2.contourArea(cnt) > filter_area_size:
-                    rect = cv2.minAreaRect(cnt)
-                    box = cv2.boxPoints(rect).astype(np.float16)
-                    xm, ym = rect[0]
-                    if first_cnt:
-                        first_cnt = False
-                        left_ids = np.argwhere(box[:, 0] < xm).squeeze()
+        _, contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            if cv2.contourArea(cnt) > filter_area_size:
+                rect = cv2.minAreaRect(cnt)
+                box = cv2.boxPoints(rect).astype(np.float16)
+                xm, ym = rect[0]
+                if first_cnt:
+                    first_cnt = False
+                    left_ids = np.argwhere(box[:, 0] < xm).squeeze()
+                    left = box[left_ids]
+                    right = np.delete(box, np.s_[left_ids], 0)
+                    top_left, bot_left = left[left[:, 1].argsort(axis=0)]
+                    top_right, bot_right = right[right[:, 1].argsort(axis=0)]
+
+                    self.center_left = xm
+                    self.center_right = xm
+                else:
+                    left_ids = np.argwhere(box[:, 0] < xm).squeeze()
+                    if xm < self.center_left:
                         left = box[left_ids]
-                        right = np.delete(box, np.s_[left_ids], 0)
                         top_left, bot_left = left[left[:, 1].argsort(axis=0)]
-                        top_right, bot_right = right[right[:, 1].argsort(axis=0)]
-
                         self.center_left = xm
+                    elif xm > self.center_right:
+                        right = np.delete(box, np.s_[left_ids], 0)
+                        top_right, bot_right = right[right[:, 1].argsort(axis=0)]
                         self.center_right = xm
-                    else:
-                        left_ids = np.argwhere(box[:, 0] < xm).squeeze()
-                        if xm < self.center_left:
-                            left = box[left_ids]
-                            top_left, bot_left = left[left[:, 1].argsort(axis=0)]
-                            self.center_left = xm
-                        elif xm > self.center_right:
-                            right = np.delete(box, np.s_[left_ids], 0)
-                            top_right, bot_right = right[right[:, 1].argsort(axis=0)]
-                            self.center_right = xm
 
-                    cv2.drawContours(fsz_mask, [cnt], -1, (1), -1)
+                cv2.drawContours(fsz_mask, [cnt], -1, (1), -1)
+        if first_cnt:
+            print("Empty frame")
+            return
 
-        # return if there is no detected area
-        # if first_cnt:
-        #     #print("Empty frame")
-        #     np.save('saved_frame_mask/frame_{}.npy'.format(self.frame_num, ), np.zeros(1, dtype=np.uint8))
-        #     return
-
-        # saving detected mask
         np.save(f'saved_frame_mask/frame_{self.frame_num}_{mask_id}.npy', fsz_mask)
 
         self.point_ids.append((self.frame_num, mask_id))
@@ -195,7 +193,6 @@ class MRCNNLogoInsertion():
                                           'x_bot_left', 'y_bot_left', 'x_bot_right', 'y_bot_right'])
 
         while saved_corners.shape[0]:
-
             smooth_idx = []
 
             prev_frame_num = saved_corners.index[0]
@@ -225,14 +222,12 @@ class MRCNNLogoInsertion():
                 elif frame_num[0] - prev_frame_num[0] > 1:
                     break
 
-            #smooth_df = smooth_points(smooth_df)
+            smooth_df = smooth_points(smooth_df)
             smooth_idx = pd.MultiIndex.from_tuples(smooth_idx, names=('frame_num', 'mask_id'))
             smooth_df.index = smooth_idx
 
             self.saved_points.loc[smooth_idx] = smooth_df
             smooth_df.drop(smooth_idx, inplace=True)
-            #print(self.saved_points.head())
-
 
     def __load_points(self):
         '''
@@ -242,16 +237,11 @@ class MRCNNLogoInsertion():
             self.__get_smoothed_points()
             self.load_smooth = False
 
-        row = self.saved_points.loc[(self.frame_num, self.mask_id)]
-        # getiing points
-        top_left = row[0:2]
-        top_right = row[2:4]
-        bot_left = row[4:6]
-        bot_right = row[6:8]
+        row = self.saved_points.loc[(self.frame_num - 1, self.mask_id)]
 
-        # saving coordinates
+        top_left, top_right, bot_left, bot_right = np.split(row, 4)
+
         self.corners = [top_left, bot_right, top_right, bot_left]
-
 
     def insert_logo(self):
         '''
@@ -261,11 +251,12 @@ class MRCNNLogoInsertion():
         if not self.detection_successful:
             return
 
-        matching = self.class_match[self.frame_num]
+        frame_num = self.frame_num - 1
+        matching = self.class_match[frame_num]
 
         for match in matching:
             self.mask_id, banner_id = match.popitem()
-            mask = np.load(f'saved_frame_mask/frame_{self.frame_num}_{self.mask_id}.npy')
+            mask = np.load(f'saved_frame_mask/frame_{frame_num}_{self.mask_id}.npy')
             logo = cv2.imread(self.replace[banner_id], cv2.IMREAD_UNCHANGED)
             self.__load_points()
             logo = self.__logo_color_adj(logo)
@@ -273,7 +264,7 @@ class MRCNNLogoInsertion():
             points = np.argwhere(mask == 1)
             for i, j in points:
                 self.frame[i, j] = transformed_logo[i, j]
-        del self.class_match[self.frame_num]
+        del self.class_match[frame_num]
 
     def __adjust_logo_shape(self, logo):
 
@@ -322,13 +313,15 @@ class MRCNNLogoInsertion():
 
         # adjust logo saturation according to the difference
         adjusted_logo_s = (logo_s * trans_coef).astype('uint8')
-        adjusted_logo_hsv = np.array([logo_h, adjusted_logo_s, logo_v]).transpose((1,2,0))
+        adjusted_logo_hsv = np.array([logo_h, adjusted_logo_s, logo_v]).transpose((1, 2, 0))
         adjusted_logo = cv2.cvtColor(adjusted_logo_hsv, cv2.COLOR_HSV2BGR)
 
         return adjusted_logo
 
 
 if __name__ == '__main__':
+
+    start = time.time()
 
     logo_insertor = MRCNNLogoInsertion()
     logo_insertor.init_params("template.yaml")
@@ -345,21 +338,23 @@ if __name__ == '__main__':
     print('start')
 
     if source_type == 0:
+        print("Detection step")
         cap = cv2.VideoCapture(source_link)
         logo_insertor.fps = cap.get(cv2.CAP_PROP_FPS)
         while cap.isOpened():
             ret, frame = cap.read()
 
             if cap.get(1) % 1000 == 0:
-                print(f"Still needs procces {cap.get(cv2.CAP_PROP_FRAME_COUNT) - cap.get(1)} frames")
+                print(f"Still need to process {cap.get(cv2.CAP_PROP_FRAME_COUNT) - cap.get(1)} frames")
 
             if ret:
                 logo_insertor.detect_banner(frame)
             else:
                 break
-        
-        print('second etap')
+
         cap.release()
+
+        print('Insertion step')
 
         logo_insertor.frame_num = 0
         logo_insertor.before_smoothing = False
@@ -374,22 +369,23 @@ if __name__ == '__main__':
         while cap.isOpened():
             ret, frame = cap.read()
 
+            if cap.get(1) % 1000 == 0:
+                print(f"Still need to process {cap.get(cv2.CAP_PROP_FRAME_COUNT) - cap.get(1)} frames")
+
             if ret:
                 logo_insertor.detect_banner(frame)
                 logo_insertor.insert_logo()
 
                 if save_result:
                     out.write(frame)
-
-                # cv2.imshow('Video (press Q to close)', frame)
-                # if cv2.waitKey(23) & 0xFF == ord('q'):
-                #     break
             else:
                 break
 
         cap.release()
         cv2.destroyAllWindows()
         out.release()
+        timing = time.time() - start
+        print(f"The processing video took {timing//60} minutes {round(timing%60)} seconds")
     else:
         frame = cv2.imread(source_link, cv2.IMREAD_UNCHANGED)
 
@@ -406,3 +402,4 @@ if __name__ == '__main__':
         cv2.imshow('Image (press Q to close)', frame)
         if cv2.waitKey(0) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
+

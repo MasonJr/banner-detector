@@ -18,19 +18,19 @@ replace: # specifying banner to replace by id of original banner
 
 # timepoints
 periods: # if the banner should be replaced throughout the video, periods should not be specified
-   period_1: {start: 1126, finish: 1136} # periods must be specified in seconds
+   period_1: {start: 321, finish: 328} # periods must be specified in seconds
 #   period_2: {start: 7, finish: 8}
 
-model_weight_path: 'weights/mask_rcnn_checkpoint.h5'
+model_weight_path: 'weights/mask_rcnn.h5'
 
 # video/image source link
 #source_link: 'football_min.mp4'  # type file path to source file
-source_link: 'new_video.mp4'      # type file path to source file
+source_link: 'test_2.mp4'      # type file path to source file
 source_type: 0                   # select 0 for video, 1 for image
 
 # saving result
 save_result: True                # select False if you don't want to save result
-saving_link: 'result.avi'   # type file path and name to save result
+saving_link: 'result.mp4'   # type file path and name to save result
 
 # logo link
 logo_link: '1xbet.png'           # type file path to the logo file
@@ -42,7 +42,7 @@ img_channels: 3                  # image color (BGR)
 
 
 # banner detection parameters
-filter_area_size: 30             # filters small contours
+filter_area_size: 20             # filters small contours
 full_size_step: 50               # walking step for predicting full size frame
 
 # smoothing coordinates parameters
