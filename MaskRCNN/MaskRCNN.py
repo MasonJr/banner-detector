@@ -62,15 +62,11 @@ class MRCNNLogoInsertion():
         self.class_ids = list()
         self.masks = list()
         self.banner_id = None
-        self.saved_points = pd.DataFrame(columns=['top_left_x', 'top_left_y', 'top_right_x', 'top_right_y',
-                                                  'bot_left_x', 'bot_left_y', 'bot_right_x', 'bot_right_y'])
+        self.saved_points = pd.DataFrame(columns=['x_top_left', 'y_top_left', 'x_top_right', 'y_top_right',
+                                                  'x_bot_left', 'y_bot_left', 'x_bot_right', 'y_bot_right'])
 
     def init_params(self, params):
-        """
-        reading parameters in dictionary
-        :param params:
-        :return:
-        """
+
         with open(params) as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
         self.replace = self.config['replace']
@@ -80,27 +76,22 @@ class MRCNNLogoInsertion():
         self.start, self.finish = self.config['periods'][self.key].values()
 
     def __valid_time(self):
-        """
-        checks time intervals
-        """
+
         times = self.frame_num / self.fps
-        if (self.start < times) and (times < self.finish):
+        if (self.start <= times) and (times <= self.finish):
             self.process = True
         else:
             self.process = False
 
         if times == self.finish:
+            print(f"Ended {self.key.split('_')[0]} {self.key.split('_')[1]}")
             del self.config['periods'][self.key]
             if len(self.config['periods'].keys()):
                 self.key = list(self.config['periods'].keys())[0]
                 self.start, self.finish = self.config['periods'][self.key].values()
 
     def detect_banner(self, frame):
-        '''
-        This method detects banner's pixels using Unet model, and saves deteсted binary mask
-        and saves coordinates for top left and bottom right corners of a banner
-        :frame: image or video frame where we will make detection and insertion
-        '''
+
         self.frame = frame
         self.__valid_time()
         if self.process:
@@ -108,7 +99,6 @@ class MRCNNLogoInsertion():
                 self.__detect_mask()
                 for mask_id, class_id in enumerate(self.class_ids):
                     mask = self.masks[mask_id]
-                    # mask = self.masks[:, :, mask_id]
                     self.__check_contours(mask, class_id, mask_id)
             else:
                 if self.frame_num in self.class_match:
@@ -131,10 +121,7 @@ class MRCNNLogoInsertion():
                 self.class_ids.append(class_id)
 
     def __check_contours(self, fsz_mask, class_id, mask_id):
-        '''
-        This method finding detected contours and corner coordinates
-        :fsz_mask: detected full size mask
-        '''
+
         # load parameters
         filter_area_size = self.config['filter_area_size']
 
@@ -237,11 +224,9 @@ class MRCNNLogoInsertion():
             self.__get_smoothed_points()
             self.load_smooth = False
 
-        row = self.saved_points.loc[(self.frame_num - 1, self.mask_id)]
+        row = np.array(self.saved_points.loc[(self.frame_num - 1, self.mask_id)])
 
-        top_left, top_right, bot_left, bot_right = np.split(row, 4)
-
-        self.corners = [top_left, bot_right, top_right, bot_left]
+        self.corners = np.split(row, 4)
 
     def insert_logo(self):
         '''
@@ -268,17 +253,11 @@ class MRCNNLogoInsertion():
 
     def __adjust_logo_shape(self, logo):
 
-        '''
-        The method resizes and applies perspective transformation on logo
-        :logo: the logo that we will transform
-        :return: transformed logo
-        '''
-
         # points before and after transformation
         # top_left, bot_left, bot_right, top_right
         h, w = logo.shape[:2]
         pts1 = np.float32([(0, 0), (0, (h - 1)), ((w - 1), (h - 1)), ((w - 1), 0)])
-        pts2 = np.float32([self.corners[0], self.corners[3], self.corners[1], self.corners[2]])
+        pts2 = np.float32([self.corners[0], self.corners[2], self.corners[3], self.corners[1]])
 
         # perspective transformation
         mtrx = cv2.getPerspectiveTransform(pts1, pts2)
@@ -288,14 +267,8 @@ class MRCNNLogoInsertion():
 
     def __logo_color_adj(self, logo):
 
-        '''
-        The method changes color of the logo to adjust it to frame
-        :logo: the logo that we will change
-        :return: changed logo
-        '''
-
         # select banner area
-        banner = self.frame[int(self.corners[0][1]):int(self.corners[1][1]),
+        banner = self.frame[int(self.corners[0][1]):int(self.corners[2][1]),
                  int(self.corners[0][0]):int(self.corners[1][0])].copy()
 
         # get logo hsv
@@ -386,6 +359,7 @@ if __name__ == '__main__':
         out.release()
         timing = time.time() - start
         print(f"The processing video took {timing//60} minutes {round(timing%60)} seconds")
+
     else:
         frame = cv2.imread(source_link, cv2.IMREAD_UNCHANGED)
 
@@ -402,4 +376,3 @@ if __name__ == '__main__':
         cv2.imshow('Image (press Q to close)', frame)
         if cv2.waitKey(0) & 0xFF == ord('q'):
             cv2.destroyAllWindows()
-
