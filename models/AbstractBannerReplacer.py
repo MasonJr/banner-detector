@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class BannerReplacer(ABC):
+class AbstractBannerReplacer(ABC):
     @abstractmethod
     def build_model(self, filename):
         pass
@@ -13,7 +13,3 @@ class BannerReplacer(ABC):
     @abstractmethod
     def insert_logo(self):
         pass
-
-
-if __name__ == '__main__':
-    print('Abstract class is ready to import')

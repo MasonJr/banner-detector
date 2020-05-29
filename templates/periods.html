@@ -1,0 +1,66 @@
+<!doctype html>
+
+<html>
+<head>
+
+<style>
+input[type=text] {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+}
+
+#add, #remove, #final {
+  background-color: #4CAF50; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+</style>
+
+</head>
+
+<script>
+
+    var index = 1
+    function adds() {
+        index++
+        let form = document.getElementById("periods");
+        var br = document.createElement("br");
+        form.appendChild(br);
+        let h3 = document.createElement("h3");
+        h3.textContent = "Period " + index
+        form.appendChild(h3)
+        let start = document.createElement("INPUT")
+        let finish = document.createElement("INPUT")
+        let add = document.getElementById("add")
+        let final = document.getElementById("final")
+        add.parentNode.removeChild(add)
+        final.parentNode.removeChild(final)
+        start.setAttribute("type", "text")
+        finish.setAttribute("type", "text")
+        start.setAttribute("name", "start_" + index)
+        finish.setAttribute("name", "finish_" + index)
+        form.appendChild(start)
+        form.appendChild(finish)
+        form.appendChild(add)
+        form.appendChild(final)
+    }
+</script>
+
+<body>
+<form action="/periods" method="post" id="periods">
+    <h3>Period 1</h3>
+    <input type="text" name="start_1">
+    <input type="text" name="finish_1">
+    <input type="button" value="Add period" onclick="adds();" id="add">
+    <input type='submit' value='Send' id="final">
+</form>
+
+</body>
+</html>

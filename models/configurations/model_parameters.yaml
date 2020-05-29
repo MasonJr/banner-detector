@@ -1,0 +1,89 @@
+area_threshold:
+- 100
+- 4
+centroid_bias: 21
+cnt_area_threshold: 15
+coef:
+  '1': 0.8
+  '2': 1.2
+  '3': 0.95
+  '4': 1.02
+deviation: 0.1
+dst_threshold: 0.7
+filter_area_size: 30
+full_size_step: 50
+h_params:
+  high: 130
+  low: 105
+hsv_body:
+  h:
+  - 0
+  - 200
+  s:
+  - 10
+  - 70
+  v:
+  - 150
+  - 255
+hsv_flag:
+  h:
+  - 0
+  - 50
+  s:
+  - 50
+  - 200
+  v:
+  - 150
+  - 255
+hsv_referee:
+  high_h: 180
+  high_v: 100
+  low_h: 10
+  low_v: 0
+img_channels: 3
+img_height: 720
+img_width: 1280
+logo_link: 1xbet.png
+mask_path: /usr/src/app/models/frame_mask
+matcher:
+  index_params:
+  - 1
+  - 5
+  search_params: 70
+max_window: 33
+min_match_count: 10
+min_window: 4
+model_weights_path: /usr/src/app/instance/weights/mrcnn.h5
+n_features: 200000
+neighbours: 2
+periods:
+  period_1:
+    finish: '187'
+    start: '183'
+poly_degree: 2
+rc_threshold: 5.0
+replace:
+  1: /usr/src/app/instance/logotypes/Versace.png
+  2: /usr/src/app/instance/logotypes/Versace.png
+  3: /usr/src/app/instance/logotypes/Versace.png
+  4: /usr/src/app/instance/logotypes/Versace.png
+  5: /usr/src/app/instance/logotypes/Versace.png
+  6: /usr/src/app/instance/logotypes/Versace.png
+s_params:
+  high: 255
+  low: 40
+save_result: true
+saving_link: /usr/src/app/instance/download/test_2.mp4
+smooth_threshold: 10
+source_link: /usr/src/app/instance/upload/test_2.mp4
+source_type: 0
+train_model: false
+v_params:
+  high: 255
+  low: 70
+value_threshold: 0.9
+w_ratio: 5.7
+w_threshold: 0.985
+x_train_path: ''
+y_coefficient: 0.242
+y_train_path: ''

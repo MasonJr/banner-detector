@@ -1,0 +1,50 @@
+<!doctype html>
+
+<html>
+<head>
+
+<style>
+input[type=text] {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+}
+
+#final {
+  background-color: #4CAF50; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+<form action="/banner" method = "POST"
+      enctype = "multipart/form-data">
+    <h3>gazprom</h3>
+    <input type="file" name="gazprom">
+    <h3>heineken</h3>
+    <input type="file" name="heineken">
+    <h3>mastercard</h3>
+    <input type="file" name="mastercard">
+    <h3>nissan</h3>
+    <input type="file" name="nissan">
+    <h3>pepsi</h3>
+    <input type="file" name="pepsi">
+    <h3>playstation</h3>
+    <input type="file" name="playstation">
+    <br>
+    <input type='submit' value='Send' id="final">
+
+</form>
+</body>
+</html>
