@@ -79,7 +79,7 @@ def process_video(config_file):
             gc.collect()
 
         if ret:
-            logo_insertor.detect_banner(frame)
+            frame = logo_insertor.detect_banner(frame)
 
             out.write(frame)
         else:

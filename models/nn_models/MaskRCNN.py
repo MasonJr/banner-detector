@@ -114,12 +114,16 @@ class MRCNNLogoInsertion:
             if self.before_smoothing:
                 self.__detect_mask()
         self.frame_num += 1
+        return self.frame
 
     def __detect_mask(self):
         rgb_frame = np.flip(self.frame, 2)
         result = self.model.detect([rgb_frame])[0]
         class_ids = result['class_ids']
         masks = result['masks']
+
+        overlay = np.zeros((self.frame.shape[0], self.frame.shape[1], 4), dtype='uint8')
+        frame_rgba = cv2.cvtColor(self.frame, cv2.COLOR_RGB2BGRA)
 
         for i, class_id in enumerate(class_ids):
             mask = masks[:, :, i].astype(np.float32)
@@ -134,10 +138,15 @@ class MRCNNLogoInsertion:
                 _, contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for cnt in contours:
                     if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0012:
-                        cv2.drawContours(self.frame, [cnt], 0, (0, 255, 0), -1)
+                        # cv2.drawContours(self.frame, [cnt], 0, (0, 255, 0), -1)
+                        cv2.drawContours(overlay, [cnt], -1, (0, 255, 0), 2)
 
                 contours = get_contours(banner_mask)
-
                 for cnt in contours:
                     if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0004:
-                        cv2.drawContours(self.frame, [cnt], 0, (0, 255, 0), -1)
+                        # cv2.drawContours(self.frame, [cnt], 0, (255, 0, 0), -1)
+                        cv2.drawContours(overlay, [cnt], -1, (0, 0, 255), 2)
+
+            cv2.addWeighted(overlay, 0.5, frame_rgba, 1.0, 0, frame_rgba)
+
+        self.frame = cv2.cvtColor(frame_rgba, cv2.COLOR_BGRA2RGB)
