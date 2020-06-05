@@ -5,6 +5,7 @@ venv/
 /testing/result
 /testing/videos
 build_detection.sh
+build.sh
 *.avi
 *.mp4
 *.jpg
