@@ -125,24 +125,19 @@ class MRCNNLogoInsertion:
             mask = masks[:, :, i].astype(np.float32)
 
             mask = process_mask(mask)
-            # if mask.any():
-            #
-            #     _, contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            #     for cnt in contours:
-            #         if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0012:
-            #             cv2.drawContours(self.frame, [cnt], 0, (0, 255, 0), -1)
+
+            banner_mask = np.zeros_like(rgb_frame)
+            points = np.where(mask == 1)
+            banner_mask[points] = rgb_frame[points].copy()
 
             if mask.any():
-                #
-                # overlay = np.zeros((self.frame.shape[0], self..shape[1], 4), dtype='uint8')
-                # frame_rgba = cv2.cvtColor(self.frame, cv2.COLOR_BGR2BGRA)
-
-                banner_mask = np.zeros_like(rgb_frame)
-                points = np.where(mask == 1)
-                banner_mask[points] = rgb_frame[points]
+                _, contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for cnt in contours:
+                    if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0012:
+                        cv2.drawContours(self.frame, [cnt], 0, (0, 255, 0), -1)
 
                 contours = get_contours(banner_mask)
 
                 for cnt in contours:
-                    # if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0005:
-                    cv2.drawContours(self.frame, [cnt], 0, (0, 255, 0), -1)
+                    if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0004:
+                        cv2.drawContours(self.frame, [cnt], 0, (0, 255, 0), -1)
