@@ -29,12 +29,12 @@ def get_contours(mask):
 
     gray_mask = cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY)
     gray_erosion = cv2.erode(gray_mask, small_kernel, iterations=1)
-    gray_dilation = cv2.dilate(gray_erosion, small_kernel, iterations=5)
+    gray_dilation = cv2.dilate(gray_erosion, small_kernel, iterations=3)
     ret, thresh = cv2.threshold(gray_dilation, 127, 256, cv2.THRESH_BINARY)
     opening = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, small_kernel)
     gauss = cv2.GaussianBlur(opening, (5, 5), 1)
     dilation = cv2.dilate(gauss, small_kernel, iterations=1)
-    erosion = cv2.erode(dilation, kernel, iterations=3)
+    erosion = cv2.erode(dilation, kernel, iterations=2)
 
     _, contours, _ = cv2.findContours(erosion, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
