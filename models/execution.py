@@ -63,33 +63,10 @@ def process_video(config_file):
     source_link = logo_insertor.config['source_link']
     saving_link = logo_insertor.config['saving_link']
 
-    print("Detection step")
-    cap = cv2.VideoCapture(source_link)
-    logo_insertor.fps = cap.get(cv2.CAP_PROP_FPS)
-    while cap.isOpened():
-        ret, frame = cap.read()
-
-        if ret:
-            logo_insertor.detect_banner(frame)
-        else:
-            break
-
-        if cap.get(1) % 1000 == 0:
-            print(f"Processed {round(cap.get(1)/cap.get(cv2.CAP_PROP_FRAME_COUNT) * 100, 3)}%")
-            gc.collect()
-
-    cap.release()
-    device = cuda.get_current_device()
-    device.reset()
-    gc.collect()
-
-    print('Insertion step')
-
-    logo_insertor.frame_num = 0
-    logo_insertor.before_smoothing = False
     logo_insertor.init_params(config_file)
 
     cap = cv2.VideoCapture(source_link)
+    logo_insertor.fps = cap.get(cv2.CAP_PROP_FPS)
     frame_width = int(cap.get(3))
     frame_height = int(cap.get(4))
     four_cc = cv2.VideoWriter_fourcc('m', 'p', '4', 'v')
@@ -102,12 +79,8 @@ def process_video(config_file):
             print(f"Inserted {round(cap.get(1)/cap.get(cv2.CAP_PROP_FRAME_COUNT) * 100, 3)}%")
             gc.collect()
 
-        if cap.get(1) % 20 == 0:
-            gc.collect()
-
         if ret:
             logo_insertor.detect_banner(frame)
-            logo_insertor.insert_logo()
 
             out.write(frame)
         else:
@@ -118,9 +91,5 @@ def process_video(config_file):
     out.release()
 
     add_audio(saving_link)
-
-    files = glob.glob(app.config['MASK_PATH']+'/*.npy')
-    for f in files:
-        os.remove(f)
 
     return True
