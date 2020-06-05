@@ -32,6 +32,26 @@ def before_request():
 def init():
     return redirect('/set_video')
 
+@app.route('/set_video', methods=["POST", "GET"])
+def get_video_path():
+
+    if request.method == 'GET':
+        return render_template("video.html")
+    else:
+        video_path = request.form['video_path']
+
+        with open(app.config["CONFIG_PATH"], 'r') as params_file:
+            model_parameters = yaml.load(params_file, Loader=yaml.FullLoader)
+
+        video_name = video_path.split('/')[-1]
+
+        model_parameters['source_link'] = os.path.join(app.config["UPLOAD_FOLDER"], video_name)
+        model_parameters['saving_link'] = os.path.join(app.config["DOWNLOAD_FOLDER"], video_name)
+        with open(app.config["CONFIG_PATH"], 'w') as write_file:
+            documents = yaml.dump(model_parameters, write_file)
+
+        return redirect('/periods')
+
 
 @app.route('/periods', methods=["POST", "GET"])
 def set_time_periods():
@@ -69,56 +89,7 @@ def set_time_periods():
         with open(app.config["CONFIG_PATH"], 'w') as write_file:
             documents = yaml.dump(model_parameters, write_file)
 
-        return render_template('banners.html')
-
-
-@app.route('/banner', methods=['POST', 'GET'])
-def select_logo():
-
-    if request.method == 'GET':
-        return render_template("banners.html")
-    else:
-        files = request.files
-
-        with open(app.config["CONFIG_PATH"], 'r') as params_file:
-            model_parameters = yaml.load(params_file, Loader=yaml.FullLoader)
-
-        banner_names = {"gazprom": 1, "heineken": 2, "mastercard": 3, "nissan": 4, "pepsi": 5, "playstation": 6}
-
-        model_parameters['replace'] = {}
-        for name in files:
-            logotype = files[name]
-            if logotype.filename:
-                filename = secure_filename(logotype.filename)
-                logotype_path = os.path.join(app.config['LOGO_FOLDER'], filename)
-                logotype.save(logotype_path)
-                model_parameters['replace'][banner_names[name]] = logotype_path
-
-        with open(app.config["CONFIG_PATH"], 'w') as write_file:
-            documents = yaml.dump(model_parameters, write_file)
-
-        return render_template('process.html')
-
-
-@app.route('/set_video', methods=["POST", "GET"])
-def get_video_path():
-
-    if request.method == 'GET':
-        return render_template("video.html")
-    else:
-        video_path = request.form['video_path']
-
-        with open(app.config["CONFIG_PATH"], 'r') as params_file:
-            model_parameters = yaml.load(params_file, Loader=yaml.FullLoader)
-
-        video_name = video_path.split('/')[-1]
-
-        model_parameters['source_link'] = os.path.join(app.config["UPLOAD_FOLDER"], video_name)
-        model_parameters['saving_link'] = os.path.join(app.config["DOWNLOAD_FOLDER"], video_name)
-        with open(app.config["CONFIG_PATH"], 'w') as write_file:
-            documents = yaml.dump(model_parameters, write_file)
-
-        return render_template('periods.html')
+        return redirect('/process')
 
 
 @app.route('/process', methods=["POST", "GET"])

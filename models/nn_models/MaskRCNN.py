@@ -56,12 +56,11 @@ class MRCNNLogoInsertion:
         self.config = None
         self.process = False
         self.to_replace = None
-        self.point_ids = list()
-        self.class_match = defaultdict(list)
+
         self.before_smoothing = True
         self.mask_id = None
         self.class_ids = list()
-        self.backgrounds = {}
+
         # self.mask_ids = list()
         self.masks_path = None
         # self.saved_masks = pd.DataFrame(columns=['x_top_left', 'y_top_left', 'x_top_right', 'y_top_right',
@@ -123,20 +122,24 @@ class MRCNNLogoInsertion:
         masks = result['masks']
 
         for i, class_id in enumerate(class_ids):
-            if class_id in self.to_replace:
-                mask = masks[:, :, i].astype(np.float32)
+            mask = masks[:, :, i].astype(np.float32)
 
-                mask = process_mask(mask)
+            mask = process_mask(mask)
+            if mask.any():
 
-                if mask.any():
+                _, contours, _ = cv2.findContours(mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                for cnt in contours:
+                    if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0012:
+                        cv2.drawContours(self.frame, [cnt], 0, (0, 255, 0), -1)
 
-                    banner_mask = np.zeros_like(rgb_frame)
-                    points = np.where(mask == 1)
-                    banner_mask[points] = rgb_frame[points]
-
-                    contours = get_contours(banner_mask)
-
-                    for cnt in contours:
-                        if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0008:
-
-                            cv2.drawContours(self.frame, cnt, 3, (0, 255, 0), 3)
+            # if mask.any():
+            #
+            #     banner_mask = np.zeros_like(rgb_frame)
+            #     points = np.where(mask == 1)
+            #     banner_mask[points] = rgb_frame[points]
+            #
+            #     contours = get_contours(banner_mask)
+            #
+            #     for cnt in contours:
+            #         if cv2.contourArea(cnt) > np.product(mask.shape) * 0.0008:
+            #             cv2.drawContours(self.frame, [cnt], 0, (255, 0, 0), -1)

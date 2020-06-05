@@ -58,20 +58,11 @@ n_features: 200000
 neighbours: 2
 periods:
   period_1:
-    finish: 77
-    start: 65
-  period_2:
-    finish: 188
+    finish: 184
     start: 183
 poly_degree: 2
 rc_threshold: 5.0
-replace:
-  1: /home/yura/PycharmProjects/banner-detector/instance/logotypes/hds.jpg
-  2: /home/yura/PycharmProjects/banner-detector/instance/logotypes/pm.jpeg
-  3: /home/yura/PycharmProjects/banner-detector/instance/logotypes/Versace_logo.png
-  4: /home/yura/PycharmProjects/banner-detector/instance/logotypes/pm.jpeg
-  5: /home/yura/PycharmProjects/banner-detector/instance/logotypes/logo-uber_9342.jpg
-  6: /home/yura/PycharmProjects/banner-detector/instance/logotypes/Intel-Logo.png
+replace: {}
 s_params:
   high: 255
   low: 40

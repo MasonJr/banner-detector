@@ -55,6 +55,7 @@ def add_audio(out_video_path):
 def process_video(config_file):
 
     logo_insertor = MRCNNLogoInsertion()
+
     logo_insertor.init_params(config_file)
 
     config = myMaskRCNNConfig()
@@ -62,8 +63,6 @@ def process_video(config_file):
     logo_insertor.model.load_weights(logo_insertor.config['model_weights_path'], by_name=True)
     source_link = logo_insertor.config['source_link']
     saving_link = logo_insertor.config['saving_link']
-
-    logo_insertor.init_params(config_file)
 
     cap = cv2.VideoCapture(source_link)
     logo_insertor.fps = cap.get(cv2.CAP_PROP_FPS)
